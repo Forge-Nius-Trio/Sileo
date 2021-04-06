@@ -183,7 +183,7 @@ func moveFileAsRoot(from: URL, to: URL) {
     #if targetEnvironment(simulator) || TARGET_SANDBOX
     try? FileManager.default.moveItem(at: from, to: to)
     #elseif targetEnvironment(macCatalyst)
-    spawn(command: "/bin/mv", args: ["mv", #"\(from.aptPath)"#, "\(to.aptPath)"])
+    spawn(command: "/bin/mv", args: ["mv", "\(from.aptPath)", "\(to.aptPath)"])
     spawn(command: "/usr/sbin/chown", args: ["chown", "0:0", "\(to.aptPath)"])
     spawn(command: "/bin/chmod", args: ["chmod", "0644", "\(to.aptPath)"])
     #else
