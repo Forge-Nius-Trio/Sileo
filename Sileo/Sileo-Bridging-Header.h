@@ -4,6 +4,11 @@
 #import "WhiteBlur.h"
 #import "ControlFileParserFast.h"
 #import "DFContinuousForceTouchGestureRecognizer.h"
+
+#if TARGET_OS_MACCATALYST
+#import "LaunchAsRoot.h"
+#endif
+
 @import LNPopupController;
 
 @interface LNPopupBar ()

@@ -55,6 +55,8 @@ class AltIconTableViewController: UITableViewController {
         self.tableView.dataSource = self
         self.tableView.tableFooterView = UIView()
         self.tableView.rowHeight = 75
+        
+        NSLog("[Sileo] Allowed to show alt icons = \(UIApplication.shared.supportsAlternateIcons)")
                 
         weak var weakSelf = self
         NotificationCenter.default.addObserver(weakSelf as Any,

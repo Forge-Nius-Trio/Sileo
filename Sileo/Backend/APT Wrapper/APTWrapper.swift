@@ -90,6 +90,7 @@ class APTWrapper {
                          "-oquiet::NoStatistic=true", "-c", Bundle.main.path(forResource: "sileo-apt", ofType: "conf") ?? "",
                          "-oAPT::Get::Show-User-Simulation-Note=False",
                          "-oAPT::Format::for-sileo=true", "install", "--reinstall"]
+        NSLog("[Sileo] Args = \(arguments)")
         for package in installs {
             if package.package.package.contains("/") {
                 arguments.append(package.package.package)
@@ -124,10 +125,15 @@ class APTWrapper {
         if installs.isEmpty && removals.isEmpty {
             aptOutput = ""
         } else {
+            #if targetEnvironment(macCatalyst)
+            (_, aptOutput, aptErrorOutput) = spawn(command: "/opt/procursus/bin/apt-get", args: ["apt-get"] + arguments)
+            #else
             (_, aptOutput, aptErrorOutput) = spawn(command: "/usr/bin/apt-get", args: ["apt-get"] + arguments)
+            #endif
         }
         #endif
-        
+        NSLog("[Sileo] aptOutput = \(aptOutput) aptErrorOutput = \(aptErrorOutput)")
+        NSLog("[Sileo] Lets just search the cache as a test \(spawn(command: "/opt/procursus/bin/apt-cache", args: ["apt-cache", "search", "."]))")
         var packageOperations: [String: [[String: Any]]] = [:]
         var packageInstalls: [[String: String]] = []
         var packageRemovals: [[String: String]] = []
@@ -226,18 +232,37 @@ class APTWrapper {
         return (true, rawProgress, statusReadable)
     }
     
+    #if targetEnvironment(macCatalyst)
+    private class func fuckedUpVerify(_ key: String, _ data: String) -> String {
+        guard let keyFile = key.components(separatedBy: "/").last,
+              let dataFile = data.components(separatedBy: "/").last else { return "" }
+        let oldKeyURL = URL(fileURLWithPath: key)
+        let oldDataURL = URL(fileURLWithPath: data)
+        let keyURL = URL(fileURLWithPath: "/tmp/\(keyFile)")
+        let dataURL = URL(fileURLWithPath: "/tmp/\(dataFile)")
+        copyFileAsRoot(from: oldKeyURL, to: keyURL)
+        copyFileAsRoot(from: oldDataURL, to: dataURL)
+        spawn(command: "/bin/chmod", args: ["chmod", "0755", keyURL.aptPath])
+        spawn(command: "/bin/chmod", args: ["chmod", "0755", dataURL.aptPath])
+        let (_, output, _) = spawn(command: "/opt/procursus/bin/apt-key", args: ["apt-key", "verify", "-q", "--status-fd", "1", keyURL.aptPath, dataURL.aptPath])
+        deleteFileAsRoot(keyURL)
+        deleteFileAsRoot(dataURL)
+        return output
+    }
+    #endif
+    
     public class func verifySignature(key: String, data: String, error: inout String) -> Bool {
         #if targetEnvironment(simulator) || TARGET_SANDBOX
         
         error = "GnuPG not available in sandboxed environment"
         return false
-        
+        #elseif targetEnvironment(macCatalyst)
+        let output = fuckedUpVerify(key, data)
+        NSLog("[Sileo] fuckedUpVerifyOutput = \(output)")
         #else
-        
         let (_, output, _) = spawn(command: "/bin/sh", args: ["sh", "/usr/bin/apt-key", "verify", "-q", "--status-fd", "1", key, data])
-        
+        #endif
         let outputLines = output.components(separatedBy: "\n")
-        
         var keyIsGood = false
         var keyIsTrusted = false
         
@@ -275,8 +300,6 @@ class APTWrapper {
             }
         }
         return keyIsGood && keyIsTrusted
-        
-        #endif
     }
     
     public class func performOperations(installs: [DownloadPackage],
@@ -284,15 +307,25 @@ class APTWrapper {
                                         progressCallback: @escaping (Double, Bool, String) -> Void,
                                         outputCallback: @escaping (String, Int) -> Void,
                                         completionCallback: @escaping (Int, FINISH, Bool) -> Void) {
-        guard let giveMeRootPath = Bundle.main.path(forAuxiliaryExecutable: "giveMeRoot") else {
-            fatalError("Unable to find giveMeRoot")
-        }
-        
-        var arguments = ["/usr/bin/apt-get", "install", "--reinstall", "--allow-unauthenticated", "--allow-downgrades",
+        #if targetEnvironment(macCatalyst)
+        let giveMeRootPath = "/opt/procursus/bin/apt-get"
+        var arguments = ["apt-get", "install", "--reinstall", "--allow-unauthenticated", "--allow-downgrades",
                         "--no-download", "--allow-remove-essential", "--allow-change-held-packages",
                          "-c", Bundle.main.path(forResource: "sileo-apt", ofType: "conf") ?? "",
                          "-y", "-f", "-o", "APT::Status-Fd=5", "-o", "APT::Keep-Fds::=6",
                          "-o", "APT::Sandbox::User=root"]
+        #else
+        guard let giveMeRootPath = Bundle.main.path(forAuxiliaryExecutable: "giveMeRoot") else {
+            fatalError("Unable to find giveMeRoot")
+        }
+        let location = "/usr/bin/apt-get"
+        var arguments = [location, "install", "--reinstall", "--allow-unauthenticated", "--allow-downgrades",
+                        "--no-download", "--allow-remove-essential", "--allow-change-held-packages",
+                         "-c", Bundle.main.path(forResource: "sileo-apt", ofType: "conf") ?? "",
+                         "-y", "-f", "-o", "APT::Status-Fd=5", "-o", "APT::Keep-Fds::=6",
+                         "-o", "APT::Sandbox::User=root"]
+        #endif
+        
         for package in installs {
             var packagesStr = package.package.package + "=" + package.package.version
             if package.package.package.contains("/") {
@@ -343,7 +376,9 @@ class APTWrapper {
             posix_spawn_file_actions_addclose(&fileActions, pipestatusfd[1])
             posix_spawn_file_actions_addclose(&fileActions, pipesileo[1])
             
+            #if !targetEnvironment(macCatalyst)
             arguments.insert("giveMeRoot", at: 0)
+            #endif
             
             let argv: [UnsafeMutablePointer<CChar>?] = arguments.map { $0.withCString(strdup) }
             defer {
@@ -363,6 +398,7 @@ class APTWrapper {
             var pid: pid_t = 0
             
             let retVal = posix_spawn(&pid, giveMeRootPath, &fileActions, nil, argv + [nil], env + [nil])
+
             if retVal < 0 {
                 return
             }
@@ -554,6 +590,7 @@ class APTWrapper {
                 
                 let diff = newApps.merging(oldApps) { current, _ in current }
                 
+                #if !targetEnvironment(macCatalyst)
                 for appName in diff.keys {
                     let appPath = URL(fileURLWithPath: "/Applications/").appendingPathComponent(appName)
                     NSLog("[Sileo] App Path = \(appPath.path)")
@@ -563,9 +600,13 @@ class APTWrapper {
                         spawn(command: "/usr/bin/uicache", args: ["uicache", "-p", "\(appPath.path)"])
                     }
                 }
+                #endif
             }
-            
+            #if targetEnvironment(macCatalyst)
+            spawn(command: "/opt/procursus/bin/apt-get", args: ["apt-get", "clean"])
+            #else
             spawnAsRoot(args: ["/usr/bin/apt-get", "clean"])
+            #endif
             completionCallback(Int(status), finish, refreshSileo)
         }
     }

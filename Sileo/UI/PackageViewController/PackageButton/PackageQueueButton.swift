@@ -109,7 +109,6 @@ class PackageQueueButton: PackageButton, DFContinuousForceTouchDelegate {
                         // but it's a already queued! user changed their mind about installing this new package => nuke it from the queue
                         downloadManager.remove(package: package, queue: queueFound)
                     }
-
                     downloadManager.add(package: package, queue: .installations)
                     downloadManager.reloadData(recheckPackages: true)
                 }))
@@ -381,6 +380,7 @@ class PackageQueueButton: PackageButton, DFContinuousForceTouchDelegate {
     }
     
     private func initatePurchase(provider: PaymentProvider) {
+        #if !targetEnvironment(macCatalyst)
         guard let package = package else {
             return
         }
@@ -410,9 +410,11 @@ class PackageQueueButton: PackageButton, DFContinuousForceTouchDelegate {
                 }
             }
         }
+        #endif
     }
     
     private func authenticate(provider: PaymentProvider) {
+        #if !targetEnvironment(macCatalyst)
         PaymentAuthenticator.shared.authenticate(provider: provider, window: self.window) { error, success in
             if error != nil {
                 return self.presentAlert(paymentError: error, title: String(localizationKey: "Purchase_Auth_Complete_Fail.Title",
@@ -422,6 +424,7 @@ class PackageQueueButton: PackageButton, DFContinuousForceTouchDelegate {
                 self.updatePurchaseStatus()
             }
         }
+        #endif
     }
     
     private func presentAlert(paymentError: PaymentError?, title: String) {

@@ -330,6 +330,8 @@ final class PackageListManager {
     public var dpkgDir: URL {
         #if targetEnvironment(simulator) || TARGET_SANDBOX
         return Bundle.main.bundleURL
+        #elseif targetEnvironment(macCatalyst)
+        return URL(fileURLWithPath: "/opt/procursus/var/lib/dpkg")
         #else
         return URL(fileURLWithPath: "/var/lib/dpkg")
         #endif
@@ -422,8 +424,8 @@ final class PackageListManager {
         if let packagesFileSafe = packagesFile {
             if packagesList == nil {
                 packagesList = []
-                let rawPackagesData = try Data(contentsOf: packagesFileSafe)
-                
+                let rawPackagesData = try Data(contentsOf: packagesFileSafe.aptUrl)
+                NSLog("[Sileo] rawPackagesdata = \(rawPackagesData)")
                 var index = 0
                 var separator = "\n\n".data(using: .utf8)!
                 
@@ -475,7 +477,7 @@ final class PackageListManager {
                         continue
                     }
                     package.sourceFile = repoContext?.rawEntry
-                    package.sourceFileURL = packagesFile
+                    package.sourceFileURL = packagesFile?.aptUrl
                     package.rawData = packageData
                     
                     if isStatusFile {

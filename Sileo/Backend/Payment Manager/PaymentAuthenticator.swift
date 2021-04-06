@@ -6,6 +6,7 @@
 //  Copyright © 2020 CoolStar. All rights reserved.
 //
 
+#if !targetEnvironment(macCatalyst)
 import Foundation
 import SafariServices
 
@@ -105,3 +106,5 @@ class PaymentAuthenticator: NSObject/*, ASWebAuthenticationPresentationContextPr
     }
     */
 }
+
+#endif

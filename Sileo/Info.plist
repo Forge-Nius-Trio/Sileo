@@ -4,8 +4,6 @@
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
-	<key>CFBundleDisplayName</key>
-	<string>$(DISPLAY_NAME)</string>
 	<key>CFBundleDocumentTypes</key>
 	<array>
 		<dict>
@@ -72,6 +70,15 @@
 				<key>UIPrerenderedIcon</key>
 				<true/>
 			</dict>
+			<key>OG</key>
+			<dict>
+				<key>CFBundleIconFiles</key>
+				<array>
+					<string>OG</string>
+				</array>
+				<key>UIPrerenderedIcon</key>
+				<true/>
+			</dict>
 			<key>OceanicBlue</key>
 			<dict>
 				<key>CFBundleIconFiles</key>
@@ -122,15 +129,6 @@
 				<key>CFBundleIconFiles</key>
 				<array>
 					<string>Taurine</string>
-				</array>
-				<key>UIPrerenderedIcon</key>
-				<true/>
-			</dict>
-			<key>OG</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>OG</string>
 				</array>
 				<key>UIPrerenderedIcon</key>
 				<true/>
@@ -195,6 +193,15 @@
 				<key>UIPrerenderedIcon</key>
 				<true/>
 			</dict>
+			<key>OG</key>
+			<dict>
+				<key>CFBundleIconFiles</key>
+				<array>
+					<string>OG~ipad</string>
+				</array>
+				<key>UIPrerenderedIcon</key>
+				<true/>
+			</dict>
 			<key>OceanicBlue</key>
 			<dict>
 				<key>CFBundleIconFiles</key>
@@ -245,15 +252,6 @@
 				<key>CFBundleIconFiles</key>
 				<array>
 					<string>Taurine~ipad</string>
-				</array>
-				<key>UIPrerenderedIcon</key>
-				<true/>
-			</dict>
-			<key>OG</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>OG~ipad</string>
 				</array>
 				<key>UIPrerenderedIcon</key>
 				<true/>

@@ -41,6 +41,8 @@ class DependencyResolverAccelerator {
             try? FileManager.default.createDirectory(at: listsURL, withIntermediateDirectories: true)
         }
         return listsURL
+        #elseif targetEnvironment(macCatalyst)
+        return URL(fileURLWithPath: "/opt/procursus/var/lib/apt/sileolists")
         #else
         return URL(fileURLWithPath: "/var/lib/apt/sileolists")
         #endif
@@ -55,6 +57,10 @@ class DependencyResolverAccelerator {
         partialRepoList = preflightedRepoList
         
         #if targetEnvironment(simulator) || TARGET_SANDBOX
+        #elseif targetEnvironment(macCatalyst)
+        spawn(command: "/bin/mkdir", args: ["mkdir", "-p", "/opt/procursus/var/lib/apt/sileolists"])
+        spawn(command: "/bin/chown", args: ["chown", "-R", "\(NSUserName()):staff", "/opt/procursus/var/lib/apt/sileolists"])
+        spawn(command: "/bin/chmod", args: ["chmod", "-R", "0755", "/opt/procursus/var/lib/apt/sileolists"])
         #else
         spawnAsRoot(args: ["/usr/bin/mkdir", "-p", "/var/lib/apt/sileolists"])
         spawnAsRoot(args: ["/usr/bin/chown", "-R", "mobile:mobile", "/var/lib/apt/sileolists"])
@@ -64,11 +70,17 @@ class DependencyResolverAccelerator {
         guard let filePaths = try? FileManager.default.contentsOfDirectory(at: depResolverPrefix, includingPropertiesForKeys: nil, options: []) else {
             return
         }
+        NSLog("[Sileo] filePaths = \(filePaths)")
         for filePath in filePaths {
-            try? FileManager.default.removeItem(at: filePath)
+            try? FileManager.default.removeItem(at: filePath.aptUrl)
         }
         
         #if targetEnvironment(simulator) || TARGET_SANDBOX
+        #elseif targetEnvironment(macCatalyst)
+        spawn(command: "/bin/chown", args: ["chown", "-R", "\(NSUserName()):staff", "/opt/procursus/var/lib/apt/lists"])
+        spawn(command: "/bin/chmod", args: ["chmod", "-R", "0755", "/opt/procursus/var/lib/apt/lists"])
+        let (test, test2, test3) = spawn(command: "/bin/cp", args: ["cp", "/opt/procursus/var/lib/apt/lists/*Release", "/opt/procursus/var/lib/apt/sileolists/"])
+        NSLog("[Sileo] Attempt to copy \(test) \(test2) \(test3)")
         #else
         spawnAsRoot(args: ["/usr/bin/cp", "/var/lib/apt/lists/*Release", "/var/lib/apt/sileolists/"])
         #endif
@@ -95,7 +107,7 @@ class DependencyResolverAccelerator {
                 }
                 sourcesData.append(packageData)
             }
-            try? sourcesData.write(to: newSourcesFile)
+            try? sourcesData.write(to: newSourcesFile.aptUrl)
         }
         
         partialRepoList.removeAll()
@@ -109,7 +121,7 @@ class DependencyResolverAccelerator {
     }
     
     private func getDependenciesInternal2(package: Package) {
-        guard let sourceFileURL = package.sourceFileURL else {
+        guard let sourceFileURL = package.sourceFileURL?.aptUrl else {
             return
         }
         if partialRepoList[sourceFileURL] == nil {

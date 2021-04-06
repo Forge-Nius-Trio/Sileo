@@ -15,11 +15,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UITabBarControllerDelegat
     public var window: UIWindow?
     
     func applicationDidFinishLaunching(_ application: UIApplication) {
+        #if targetEnvironment(macCatalyst)
+        _ = MacRootWrapper.shared
+        #else
         DispatchQueue.global(qos: .background).async {
             spawn(command: "/usr/bin/uicache", args: ["uicache", "-p", "/Applications/Cydia.app"])
             spawn(command: "/usr/bin/uicache", args: ["uicache", "-p", "/Applications/SafeMode.app"])
         }
-        
+        #endif
         _ = DatabaseManager.shared
         _ = DownloadManager.shared
         SileoThemeManager.shared.updateUserInterface()
@@ -118,6 +121,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UITabBarControllerDelegat
         var appVer = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Error"
         #if targetEnvironment(simulator) || TARGET_SANDBOX
         appVer += "-demo"
+        #elseif targetEnvironment(macCatalyst)
+        appVer += "-mac"
         #else
         if FileManager.default.fileExists(atPath: "/odyssey/jailbreakd") {
             appVer += "-odyssey"

@@ -80,6 +80,7 @@ final class PaymentAuthenticationBannerView: UIView {
     }
     
     @objc func buttonTapped(_ selector: Any?) {
+        #if !targetEnvironment(macCatalyst)
         PaymentAuthenticator.shared.authenticate(provider: provider, window: self.window) { error, success in
             if let error = error {
                 self.viewController.present(PaymentError.alert(for: error,
@@ -90,5 +91,6 @@ final class PaymentAuthenticationBannerView: UIView {
                 self.isHidden = true
             }
         }
+        #endif
     }
 }

@@ -8,6 +8,8 @@
 
 #import "CydiaAccountUIWebView.h"
 #import "Sileo-Swift.h"
+#if TARGET_OS_MACCATALYST
+#else
 
 //User Agent: Mozilla/5.0 (iPhone; CPU iPhone OS 10_3_3 like Mac OS X) AppleWebKit/603.3.8 (KHTML, like Gecko) Version/10.0 Mobile/14G60 Safari/602.1
 
@@ -49,3 +51,4 @@
     return returnRequest;
 }
 @end
+#endif

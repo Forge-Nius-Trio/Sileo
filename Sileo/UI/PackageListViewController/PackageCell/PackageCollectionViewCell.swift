@@ -327,6 +327,7 @@ extension PackageCollectionViewCell: SwipeCollectionViewCellDelegate {
                     DownloadManager.shared.add(package: package, queue: .installations)
                     DownloadManager.shared.reloadData(recheckPackages: true)
                 } else {
+                    #if !targetEnvironment(macCatalyst)
                     self.updatePurchaseStatus(package) { error, provider, purchased in
                         guard let provider = provider else {
                             return self.presentAlert(paymentError: .invalidResponse,
@@ -351,6 +352,7 @@ extension PackageCollectionViewCell: SwipeCollectionViewCellDelegate {
                             }
                         }
                     }
+                    #endif
                 }
             }
             self.hapticResponse()
@@ -375,7 +377,7 @@ extension PackageCollectionViewCell: SwipeCollectionViewCellDelegate {
         }
         return false
     }
-    
+    #if !targetEnvironment(macCatalyst)
     private func updatePurchaseStatus(_ package: Package, _ completion: ((PaymentError?, PaymentProvider?, Bool) -> Void)?) {
         guard let repo = package.sourceRepo else {
             return self.presentAlert(paymentError: .noPaymentProvider, title: String(localizationKey: "Purchase_Auth_Complete_Fail.Title",
@@ -412,6 +414,7 @@ extension PackageCollectionViewCell: SwipeCollectionViewCellDelegate {
             }
         }
     }
+    
     
     private func initatePurchase(provider: PaymentProvider, package: Package) {
         provider.initiatePurchase(forPackageIdentifier: package.package) { error, status, actionURL in
@@ -462,6 +465,7 @@ extension PackageCollectionViewCell: SwipeCollectionViewCellDelegate {
                                                                                               completion: nil)
         }
     }
+    #endif
     
     private func hapticResponse() {
         if #available(iOS 13, *) {

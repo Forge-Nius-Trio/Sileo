@@ -325,6 +325,7 @@ extension SettingsViewController { // UITableViewDataSource
                 let profileViewController: PaymentProfileViewController = PaymentProfileViewController(provider: provider)
                 self.navigationController?.pushViewController(profileViewController, animated: true)
             } else if indexPath.row - authenticatedProviders.count < unauthenticatedProviders.count {
+                #if !targetEnvironment(macCatalyst)
                 // Unauthenticated Provider
                 let provider: PaymentProvider = unauthenticatedProviders[indexPath.row - authenticatedProviders.count]
                 PaymentAuthenticator.shared.authenticate(provider: provider, window: self.view.window) { error, _ in
@@ -333,12 +334,15 @@ extension SettingsViewController { // UITableViewDataSource
                         self.present(PaymentError.alert(for: error, title: title), animated: true)
                     }
                 }
+                #endif
             } else if hasLoadedOnce || (indexPath.row - authenticatedProviders.count - unauthenticatedProviders.count) > 0 {
                 tableView.deselectRow(at: indexPath, animated: true)
+                #if !targetEnvironment(macCatalyst)
                 let nibName = "CydiaAccountViewController"
                 let cydiaAccountViewController = CydiaAccountViewController(nibName: nibName, bundle: nil)
                 let navController: UINavigationController = UINavigationController(rootViewController: cydiaAccountViewController)
                 self.present(navController, animated: true)
+                #endif
             }
         case 1: // Translation Credit Section OR Settings section
             if self.showTranslationCreditSection() {

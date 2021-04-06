@@ -40,6 +40,16 @@ class FeaturedViewController: SileoViewController, UIScrollViewDelegate, Feature
         #if targetEnvironment(simulator) || TARGET_SANDBOX
         #else
         DispatchQueue.global(qos: .utility).asyncAfter(deadline: DispatchTime.now() + .milliseconds(500)) {
+            #if targetEnvironment(macCatalyst)
+            if geteuid() != 0 {
+                DispatchQueue.main.sync {
+                    let alertController = UIAlertController(title: String(localizationKey: "Installation_Error.Title", type: .error),
+                                                            message: String(localizationKey: "Installation_Error.Body", type: .error),
+                                                            preferredStyle: .alert)
+                    self.present(alertController, animated: true, completion: nil)
+                }
+            }
+            #else
             let (status, output, _) = spawnAsRoot(args: ["/usr/bin/whoami"])
             if status != 0 || output != "root\n" {
                 DispatchQueue.main.sync {
@@ -49,7 +59,7 @@ class FeaturedViewController: SileoViewController, UIScrollViewDelegate, Feature
                     self.present(alertController, animated: true, completion: nil)
                 }
             }
-            
+            #endif
             PackageListManager.shared.waitForReady()
             
             var foundBroken = false
@@ -69,7 +79,11 @@ class FeaturedViewController: SileoViewController, UIScrollViewDelegate, Feature
                 }
                 
                 DispatchQueue.global(qos: .default).async {
+                    #if targetEnvironment(macCatalyst)
+                    let (status, output, errorOutput) = spawn(command: "/opt/procursus/bin/dpkg", args: ["dpkg", "--configure", "-a"])
+                    #else
                     let (status, output, errorOutput) = spawnAsRoot(args: ["/usr/bin/dpkg", "--configure", "-a"])
+                    #endif
                     
                     PackageListManager.shared.purgeCache()
                     PackageListManager.shared.waitForReady()

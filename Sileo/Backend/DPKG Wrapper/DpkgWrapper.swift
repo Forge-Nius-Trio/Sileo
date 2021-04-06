@@ -83,16 +83,26 @@ class DpkgWrapper {
     }
     
     public class func getArchitectures() -> [String] {
+        #if arch(x86_64)
+        let defaultArchitectures = ["darwin-amd64"]
+        #elseif arch(arm64) && os(macOS)
+        let defaultArchitectures = ["darwin-arm64"]
+        #else
         let defaultArchitectures = ["iphoneos-arm"]
+        #endif
         #if targetEnvironment(simulator) || TARGET_SANDBOX
         return defaultArchitectures
+        #endif
+        
+        #if targetEnvironment(macCatalyst)
+        let (retVal, outputString, _) = spawn(command: "/opt/procursus/bin/dpkg", args: ["dpkg", "--print-architecture"])
         #else
         let (retVal, outputString, _) = spawn(command: "/usr/bin/dpkg", args: ["dpkg", "--print-architecture"])
+        #endif
         guard retVal == 0 else {
             return defaultArchitectures
         }
         return outputString.components(separatedBy: CharacterSet(charactersIn: "\n"))
-        #endif
     }
     
     public class func isVersion(_ version: String, greaterThan: String) -> Bool {
@@ -152,9 +162,14 @@ class DpkgWrapper {
         Description: the best shell ever written by Brian Fox
         Name: Bourne-Again SHell
         """
+        #endif
+        
+        #if targetEnvironment(macCatalyst)
+        let (_, outputString, _) = spawn(command: "/opt/procursus/bin/dpkg-deb", args: ["dpkg-deb", "--field", "\(packageURL.path)"])
         #else
         let (_, outputString, _) = spawn(command: "/usr/bin/dpkg-deb", args: ["dpkg-deb", "--field", "\(packageURL.path)"])
-        return outputString
         #endif
+        
+        return outputString
     }
 }

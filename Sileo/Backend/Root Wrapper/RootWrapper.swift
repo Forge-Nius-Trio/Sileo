@@ -30,7 +30,15 @@ import Foundation
     
     var pid: pid_t = 0
     
+    #if targetEnvironment(macCatalyst)
+    let env = [ "PATH=/opt/procursus/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin" ]
+    let proenv: [UnsafeMutablePointer<CChar>?] = env.map { $0.withCString(strdup) }
+    defer { for case let pro? in proenv { free(pro) } }
+    let retVal = posix_spawn(&pid, command, &fileActions, nil, argv + [nil], proenv + [nil])
+    #else
     let retVal = posix_spawn(&pid, command, &fileActions, nil, argv + [nil], environ)
+    #endif
+
     if retVal < 0 {
         return (-1, "", "")
     }
@@ -113,15 +121,21 @@ import Foundation
 }
 
 @discardableResult func spawnAsRoot(args: [String]) -> (Int, String, String) {
+    #if targetEnvironment(macCatalyst)
+    fatalError("This shouldn't be called under any circumstances on Mac")
+    #else
     guard let giveMeRootPath = Bundle.main.path(forAuxiliaryExecutable: "giveMeRoot") else {
         return (-1, "", "")
     }
     return spawn(command: giveMeRootPath, args: ["giveMeRoot"] + args)
+    #endif
 }
 
 func deleteFileAsRoot(_ url: URL) {
     #if targetEnvironment(simulator) || TARGET_SANDBOX
     try? FileManager.default.removeItem(at: url)
+    #elseif targetEnvironment(macCatalyst)
+    spawn(command: "/bin/rm", args: ["rm", "-f", "\(url.aptPath)"])
     #else
     spawnAsRoot(args: ["/usr/bin/rm", "-f", "\(url.path)"])
     #endif
@@ -132,6 +146,11 @@ func copyFileAsRoot(from: URL, to: URL) {
 
     #if targetEnvironment(simulator) || TARGET_SANDBOX
     try? FileManager.default.copyItem(at: from, to: to)
+    #elseif targetEnvironment(macCatalyst)
+    NSLog("[Sileo] Attempting to copy \(from.aptPath) to \(to.aptPath)")
+    spawn(command: "/bin/cp", args: ["cp", "\(from.aptPath)", "\(to.aptPath)"])
+    spawn(command: "/bin/chown", args: ["chown", "0:0", "\(to.aptPath)"])
+    spawn(command: "/bin/chmod", args: ["chmod", "0644", "\(to.aptPath)"])
     #else
     spawnAsRoot(args: ["/usr/bin/cp", "\(from.path)", "\(to.path)"])
     spawnAsRoot(args: ["/usr/bin/chown", "0:0", "\(to.path)"])
@@ -144,13 +163,19 @@ func cloneFileAsRoot(from: URL, to: URL) {
 
     #if targetEnvironment(simulator) || TARGET_SANDBOX
     try? FileManager.default.copyItem(at: from, to: to)
-    #else
+    return
+    #endif
     if FileManager.default.fileExists(atPath: "/usr/bin/bsdcp") {
+        #if targetEnvironment(macCatalyst)
+        spawn(command: "/bin/bsdcp", args: ["bsdcp", "-c", "\(from.aptPath)", "\(to.aptPath)"])
+        spawn(command: "/bin/chown", args: ["chown", "0:0", "\(to.aptPath)"])
+        spawn(command: "/bin/chmod", args: ["chmod", "0644", "\(to.aptPath)"])
+        #else
         spawnAsRoot(args: ["/usr/bin/bsdcp", "-c", "\(from.path)", "\(to.path)"])
         spawnAsRoot(args: ["/usr/bin/chown", "0:0", "\(to.path)"])
         spawnAsRoot(args: ["/usr/bin/chmod", "0644", "\(to.path)"])
+        #endif
     }
-    #endif
 }
 
 func moveFileAsRoot(from: URL, to: URL) {
@@ -158,6 +183,10 @@ func moveFileAsRoot(from: URL, to: URL) {
     
     #if targetEnvironment(simulator) || TARGET_SANDBOX
     try? FileManager.default.moveItem(at: from, to: to)
+    #elseif targetEnvironment(macCatalyst)
+    spawn(command: "/bin/mv", args: ["mv", #"\(from.aptPath)"#, "\(to.aptPath)"])
+    spawn(command: "/bin/chown", args: ["chown", "0:0", "\(to.aptPath)"])
+    spawn(command: "/bin/chmod", args: ["chmod", "0644", "\(to.aptPath)"])
     #else
     spawnAsRoot(args: ["/usr/bin/mv", "\(from.path)", "\(to.path)"])
     spawnAsRoot(args: ["/usr/bin/chown", "0:0", "\(to.path)"])
