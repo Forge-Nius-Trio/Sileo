@@ -59,8 +59,9 @@ class DependencyResolverAccelerator {
         #if targetEnvironment(simulator) || TARGET_SANDBOX
         #elseif targetEnvironment(macCatalyst)
         spawn(command: "/bin/mkdir", args: ["mkdir", "-p", "/opt/procursus/var/lib/apt/sileolists"])
-        spawn(command: "/bin/chown", args: ["chown", "-R", "\(NSUserName()):staff", "/opt/procursus/var/lib/apt/sileolists"])
+        let (test, test2, test3) = spawn(command: "/bin/chown", args: ["chown", "-R", "\(NSUserName()):staff", "/opt/procursus/var/lib/apt/sileolists"])
         spawn(command: "/bin/chmod", args: ["chmod", "-R", "0755", "/opt/procursus/var/lib/apt/sileolists"])
+        NSLog("[Sileo] Attempt \(test) \(test2) \(test3)")
         #else
         spawnAsRoot(args: ["/usr/bin/mkdir", "-p", "/var/lib/apt/sileolists"])
         spawnAsRoot(args: ["/usr/bin/chown", "-R", "mobile:mobile", "/var/lib/apt/sileolists"])
@@ -74,18 +75,6 @@ class DependencyResolverAccelerator {
         for filePath in filePaths {
             try? FileManager.default.removeItem(at: filePath.aptUrl)
         }
-        
-        #if targetEnvironment(simulator) || TARGET_SANDBOX
-        #elseif targetEnvironment(macCatalyst)
-        spawn(command: "/bin/chown", args: ["chown", "-R", "\(NSUserName()):staff", "/opt/procursus/var/lib/apt/lists"])
-        spawn(command: "/bin/chmod", args: ["chmod", "-R", "0755", "/opt/procursus/var/lib/apt/lists"])
-        
-        /* THIS WILDCARD IS BROKEN CUZ OF ESCAPED SHELL SEQUENCES :D */
-        let (test, test2, test3) = spawn(command: "/bin/cp", args: ["cp", "/opt/procursus/var/lib/apt/lists/*Release", "/opt/procursus/var/lib/apt/sileolists/"])
-        NSLog("[Sileo] Attempt to copy \(test) \(test2) \(test3)")
-        #else
-        spawnAsRoot(args: ["/usr/bin/cp", "/var/lib/apt/lists/*Release", "/var/lib/apt/sileolists/"])
-        #endif
         
         for package in install {
             getDependenciesInternal2(package: package.package)
