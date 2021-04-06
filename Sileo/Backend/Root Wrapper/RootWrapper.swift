@@ -149,7 +149,7 @@ func copyFileAsRoot(from: URL, to: URL) {
     #elseif targetEnvironment(macCatalyst)
     NSLog("[Sileo] Attempting to copy \(from.aptPath) to \(to.aptPath)")
     spawn(command: "/bin/cp", args: ["cp", "\(from.aptPath)", "\(to.aptPath)"])
-    spawn(command: "/bin/chown", args: ["chown", "0:0", "\(to.aptPath)"])
+    spawn(command: "/usr/sbin/chown", args: ["chown", "0:0", "\(to.aptPath)"])
     spawn(command: "/bin/chmod", args: ["chmod", "0644", "\(to.aptPath)"])
     #else
     spawnAsRoot(args: ["/usr/bin/cp", "\(from.path)", "\(to.path)"])
@@ -164,18 +164,17 @@ func cloneFileAsRoot(from: URL, to: URL) {
     #if targetEnvironment(simulator) || TARGET_SANDBOX
     try? FileManager.default.copyItem(at: from, to: to)
     return
-    #endif
+    #elseif targetEnvironment(macCatalyst)
+    spawn(command: "/bin/cp", args: ["cp", "-c", "\(from.aptPath)", "\(to.aptPath)"])
+    spawn(command: "/usr/sbin/chown", args: ["chown", "0:0", "\(to.aptPath)"])
+    spawn(command: "/bin/chmod", args: ["chmod", "0644", "\(to.aptPath)"])
+    #else
     if FileManager.default.fileExists(atPath: "/usr/bin/bsdcp") {
-        #if targetEnvironment(macCatalyst)
-        spawn(command: "/bin/bsdcp", args: ["bsdcp", "-c", "\(from.aptPath)", "\(to.aptPath)"])
-        spawn(command: "/bin/chown", args: ["chown", "0:0", "\(to.aptPath)"])
-        spawn(command: "/bin/chmod", args: ["chmod", "0644", "\(to.aptPath)"])
-        #else
         spawnAsRoot(args: ["/usr/bin/bsdcp", "-c", "\(from.path)", "\(to.path)"])
         spawnAsRoot(args: ["/usr/bin/chown", "0:0", "\(to.path)"])
         spawnAsRoot(args: ["/usr/bin/chmod", "0644", "\(to.path)"])
-        #endif
     }
+    #endif
 }
 
 func moveFileAsRoot(from: URL, to: URL) {
@@ -185,7 +184,7 @@ func moveFileAsRoot(from: URL, to: URL) {
     try? FileManager.default.moveItem(at: from, to: to)
     #elseif targetEnvironment(macCatalyst)
     spawn(command: "/bin/mv", args: ["mv", #"\(from.aptPath)"#, "\(to.aptPath)"])
-    spawn(command: "/bin/chown", args: ["chown", "0:0", "\(to.aptPath)"])
+    spawn(command: "/usr/sbin/chown", args: ["chown", "0:0", "\(to.aptPath)"])
     spawn(command: "/bin/chmod", args: ["chmod", "0644", "\(to.aptPath)"])
     #else
     spawnAsRoot(args: ["/usr/bin/mv", "\(from.path)", "\(to.path)"])

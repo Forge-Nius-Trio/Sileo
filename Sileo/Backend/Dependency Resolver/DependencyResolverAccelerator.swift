@@ -59,9 +59,8 @@ class DependencyResolverAccelerator {
         #if targetEnvironment(simulator) || TARGET_SANDBOX
         #elseif targetEnvironment(macCatalyst)
         spawn(command: "/bin/mkdir", args: ["mkdir", "-p", "/opt/procursus/var/lib/apt/sileolists"])
-        let (test, test2, test3) = spawn(command: "/bin/chown", args: ["chown", "-R", "\(NSUserName()):staff", "/opt/procursus/var/lib/apt/sileolists"])
+        spawn(command: "/usr/sbin/chown", args: ["chown", "-R", "\(NSUserName()):staff", "/opt/procursus/var/lib/apt/sileolists"])
         spawn(command: "/bin/chmod", args: ["chmod", "-R", "0755", "/opt/procursus/var/lib/apt/sileolists"])
-        NSLog("[Sileo] Attempt \(test) \(test2) \(test3)")
         #else
         spawnAsRoot(args: ["/usr/bin/mkdir", "-p", "/var/lib/apt/sileolists"])
         spawnAsRoot(args: ["/usr/bin/chown", "-R", "mobile:mobile", "/var/lib/apt/sileolists"])
