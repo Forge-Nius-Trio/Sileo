@@ -79,6 +79,8 @@ class DependencyResolverAccelerator {
         #elseif targetEnvironment(macCatalyst)
         spawn(command: "/bin/chown", args: ["chown", "-R", "\(NSUserName()):staff", "/opt/procursus/var/lib/apt/lists"])
         spawn(command: "/bin/chmod", args: ["chmod", "-R", "0755", "/opt/procursus/var/lib/apt/lists"])
+        
+        /* THIS WILDCARD IS BROKEN CUZ OF ESCAPED SHELL SEQUENCES :D */
         let (test, test2, test3) = spawn(command: "/bin/cp", args: ["cp", "/opt/procursus/var/lib/apt/lists/*Release", "/opt/procursus/var/lib/apt/sileolists/"])
         NSLog("[Sileo] Attempt to copy \(test) \(test2) \(test3)")
         #else

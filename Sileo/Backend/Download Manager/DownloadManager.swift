@@ -373,7 +373,11 @@ final class DownloadManager {
         let version = aptEncoded(string: package.version, isArch: false)
         let architecture = aptEncoded(string: package.architecture ?? "", isArch: true)
         
+        #if targetEnvironment(macCatalyst)
+        let destFileName = "/opt/procursus/var/cache/apt/archives/\(packageID)_\(version)_\(architecture).deb"
+        #else
         let destFileName = "/var/cache/apt/archives/\(packageID)_\(version)_\(architecture).deb"
+        #endif
         let destURL = URL(fileURLWithPath: destFileName)
         
         if !FileManager.default.fileExists(atPath: destFileName) {
@@ -449,7 +453,11 @@ final class DownloadManager {
         let version = aptEncoded(string: package.version, isArch: false)
         let architecture = aptEncoded(string: package.architecture ?? "", isArch: true)
         
+        #if targetEnvironment(macCatalyst)
+        let destFileName = "/opt/procursus/var/cache/apt/archives/\(packageID)_\(version)_\(architecture).deb"
+        #else
         let destFileName = "/var/cache/apt/archives/\(packageID)_\(version)_\(architecture).deb"
+        #endif
         let destURL = URL(fileURLWithPath: destFileName)
         
         moveFileAsRoot(from: fileURL, to: destURL)

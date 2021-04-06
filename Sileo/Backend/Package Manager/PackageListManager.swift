@@ -331,9 +331,9 @@ final class PackageListManager {
         #if targetEnvironment(simulator) || TARGET_SANDBOX
         return Bundle.main.bundleURL
         #elseif targetEnvironment(macCatalyst)
-        return URL(fileURLWithPath: "/opt/procursus/var/lib/dpkg")
+        return URL(fileURLWithPath: "/opt/procursus/Library/dpkg")
         #else
-        return URL(fileURLWithPath: "/var/lib/dpkg")
+        return URL(fileURLWithPath: "/Library/dpkg")
         #endif
     }
     
